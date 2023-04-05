@@ -1,1 +1,1 @@
-export const myPackage = (taco = ''): string => `${taco} from my package`;
+export const lukePackage = (stuff = ''): string => `${stuff} from my package!`;
