@@ -1,9 +1,12 @@
 {
-  "name": "@lag-org/lab-ts-utils",
-  "version": "0.0.2",
+  "name": "@lukebechtel/lab-ts-utils",
+  "version": "0.0.3",
   "description": "A template for creating npm packages using TypeScript and VSCode",
   "main": "./lib/index.js",
   "private": false,
+  "publishConfig": {
+    "access": "public"
+  },
   "files": [
     "lib/**/*"
   ],
