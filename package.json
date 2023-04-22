@@ -1,5 +1,5 @@
 {
-  "name": "@lab-org/luke-ts-lib",
+  "name": "@Marviel/lab-ts-utils",
   "version": "0.0.1",
   "description": "A template for creating npm packages using TypeScript and VSCode",
   "main": "./lib/index.js",
