@@ -22,6 +22,7 @@ module.exports = {
     'node/no-missing-require': 'off',
     'node/shebang': 'off',
     '@typescript-eslint/no-use-before-define': 'off',
+    '@typescript-eslint/no-unsafe-return': 'off',
     quotes: ['warn', 'single', { avoidEscape: true }],
     'node/no-unpublished-import': 'off',
     '@typescript-eslint/no-unsafe-assignment': 'off',
