@@ -1,6 +1,6 @@
 {
-  "name": "@Marviel/lab-ts-utils",
-  "version": "0.0.1",
+  "name": "@lag-org/lab-ts-utils",
+  "version": "0.0.2",
   "description": "A template for creating npm packages using TypeScript and VSCode",
   "main": "./lib/index.js",
   "private": false,
