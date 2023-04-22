@@ -15,7 +15,6 @@ module.exports = {
     'plugin:prettier/recommended',
   ],
   rules: {
-    "indent": ["warn", 4],
     'prettier/prettier': 'warn',
     'node/no-missing-import': 'off',
     'node/no-empty-function': 'off',
