@@ -50,7 +50,8 @@
   },
   "homepage": "https://github.com/Marviel/luke-ts-lib#readme",
   "dependencies": {
-    "lodash": "^4.17.21"
+    "lodash": "^4.17.21",
+    "uuid": "^9.0.0"
   },
   "devDependencies": {
     "@ryansonshine/commitizen": "^4.2.8",
@@ -72,7 +73,8 @@
     "semantic-release": "^19.0.2",
     "ts-jest": "^27.0.5",
     "ts-node": "^10.2.1",
-    "typescript": "^4.2.4"
+    "typescript": "^4.2.4",
+    "@types/uuid": "^9.0.1"
   },
   "config": {
     "commitizen": {
