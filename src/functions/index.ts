@@ -4,5 +4,6 @@ export * from './mergeDeep';
 export * from './notEmpty';
 export * from './prefixAllLines';
 export * from './trimAllLines';
+export * from './trimLines';
 export * from './typedUuidV4';
 export * from './types';
