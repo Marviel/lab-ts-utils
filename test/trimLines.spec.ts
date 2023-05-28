@@ -1,41 +1,102 @@
 import { trimLines } from '../src/';
 
 describe('trimLines', () => {
-    it('should trim whitespace from the start and end of each line', () => {
-      const input = '   Line 1   \n  Line 2   ';
-      const expected = 'Line 1\nLine 2';
-      const result = trimLines(input);
-      expect(result).toEqual(expected);
+    it('should trim whitespaces from start and end of each line by default', () => {
+      const input = `
+        line1   
+        line2  
+          line3 
+      `;
+      const expectedOutput = 'line1\nline2\n  line3';
+      expect(trimLines(input)).toEqual(expectedOutput);
     });
   
-    it('should remove leading and trailing line blocks by default', () => {
-      const input = '\n\n  Line 1  \n  Line 2  \n\n';
-      const expected = 'Line 1\nLine 2';
-      const result = trimLines(input);
-      expect(result).toEqual(expected);
+    it('should trim left to least indent by default', () => {
+      const input = `
+            line1
+              line2
+                line3
+      `;
+      const expectedOutput = 'line1\n  line2\n    line3';
+      expect(trimLines(input)).toEqual(expectedOutput);
+    });
+
+    it('should NOT trim left to least indent when disabled', () => {
+        const input = `
+              line1
+                line2
+                  line3
+        `;
+        const config = { trimLeftToLeastIndent: false };
+        const expectedOutput = 'line1\nline2\nline3';
+        expect(trimLines(input, config)).toEqual(expectedOutput);
+      });
+  
+    it('should remove leading line blocks by default', () => {
+      const input = `
+        line1
+        line2
+        line3
+      `;
+      const expectedOutput = 'line1\nline2\nline3';
+      expect(trimLines(input)).toEqual(expectedOutput);
+    });
+
+    it('should remove trailing line blocks by default', () => {
+      const input = `
+        line1
+        line2
+        line3
+  
+      `;
+      const expectedOutput = 'line1\nline2\nline3';
+      expect(trimLines(input)).toEqual(expectedOutput);
+    });
+
+    it('should remove ONLY leading line blocks when configured', () => {
+        const input = `
+          line1
+          line2
+          line3
+        `;
+        const config = { trimVerticalStart: true, trimVerticalEnd: false };
+        const expectedOutput = 'line1\nline2\nline3\n';
+        expect(trimLines(input, config)).toEqual(expectedOutput);
+      });
+
+    it('should remove ONLY trailing line blocks when configured', () => {
+        const input = `
+          line1
+          line2
+          line3
+        `;
+        const config = { trimVerticalStart: false, trimVerticalEnd: true };
+        const expectedOutput = '\nline1\nline2\nline3';
+        expect(trimLines(input, config)).toEqual(expectedOutput);
+      });
+    
+    it('should remove NEITHER trailing line blocks when configured', () => {
+        const input = `
+          line1
+          line2
+          line3
+        `;
+        const config = { trimVerticalStart: false, trimVerticalEnd: false };
+        const expectedOutput = '\nline1\nline2\nline3\n';
+        expect(trimLines(input, config)).toEqual(expectedOutput);
+      });
+  
+
+  
+    it('should handle an empty string', () => {
+      const input = '';
+      const expectedOutput = '';
+      expect(trimLines(input)).toEqual(expectedOutput);
     });
   
-    it('should not remove any line blocks if both options are false', () => {
-      const input = '\n\n  Line 1  \n  Line 2  \n\n';
-      const config = { trimVerticalStart: false, trimVerticalEnd: false };
-      const expected = '\n\nLine 1\nLine 2\n\n';
-      const result = trimLines(input, config);
-      expect(result).toEqual(expected);
-    });
-  
-    it('should remove only leading line blocks if specified', () => {
-      const input = '\n\n  Line 1  \n  Line 2  \n\n';
-      const config = { trimVerticalStart: true, trimVerticalEnd: false };
-      const expected = 'Line 1\nLine 2\n\n';
-      const result = trimLines(input, config);
-      expect(result).toEqual(expected);
-    });
-  
-    it('should remove only trailing line blocks if specified', () => {
-      const input = '\n\n  Line 1  \n  Line 2  \n\n';
-      const config = { trimVerticalStart: false, trimVerticalEnd: true };
-      const expected = '\n\nLine 1\nLine 2';
-      const result = trimLines(input, config);
-      expect(result).toEqual(expected);
+    it('should handle a string with only whitespaces', () => {
+      const input = '   \n\t\n  ';
+      const expectedOutput = '';
+      expect(trimLines(input)).toEqual(expectedOutput);
     });
   });
