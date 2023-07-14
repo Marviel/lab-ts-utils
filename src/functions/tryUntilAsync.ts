@@ -59,7 +59,9 @@ interface TryUntilOptions<TReturn> {
 /**
  * Try to execute a promise-returning function until it succeeds or a stopping condition is reached.
  */
-export function tryUntilAsync<TReturn>(opts: TryUntilOptions<TReturn>) {
+export function tryUntilAsync<TReturn>(
+    opts: TryUntilOptions<TReturn>
+): Promise<TReturn> {
     const { func, stopCondition, tryLimits = {}, delay = { ms: 1000 } } = opts;
 
     const { maxAttempts, maxTimeMS } = tryLimits;

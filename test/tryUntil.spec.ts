@@ -1,4 +1,4 @@
-import { tryUntilAsync } from '../src/functions/tryUntil';
+import { tryUntilAsync } from '../src/functions/tryUntilAsync';
 
 describe('tryUntilAsync', () => {
     test('should resolve when promise resolves without stopCondition and no errors', async () => {
