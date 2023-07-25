@@ -1,4 +1,4 @@
-interface TryUntilOptions<TReturn> {
+export interface TryUntilOptions<TReturn> {
     /**
      * The function to try.
      *
@@ -29,6 +29,28 @@ interface TryUntilOptions<TReturn> {
         maxAttempts?: number;
         /**
          * The maximum amount of time to try,
+         * Defaults to 1 minute.
+         * 
+         * 
+         * To wait for 2 minutes:
+         * ```ts
+         * tryUntilAsync({
+         *    func: () => Promise.resolve(),
+         *    tryLimits: {
+         *      maxTimeMS: 1000 * 60 * 2
+         *    }
+         * })
+         * ```
+         * 
+         * To wait FOREVER
+         * ```ts
+         * tryUntilAsync({
+         *   func: () => Promise.resolve(),
+         *   tryLimits: {
+         *      maxTimeMS: Infinity
+         *   }
+         * })
+         * ```
          */
         maxTimeMS?: number;
     };
@@ -56,6 +78,20 @@ interface TryUntilOptions<TReturn> {
     };
 }
 
+
+/**
+ * This represents an error that occurred after the maxAttempts or maxTimeMS was reached.
+ * 
+ * To get the error that occurred on the last try, use the `lastTryError` property.
+ */
+class TryUntilTimeoutError extends Error {
+    constructor(message: string, readonly lastTryError: Error | undefined) {
+        super(message);
+        this.name = 'TryUntilTimeoutError';
+    }
+}
+
+
 /**
  * Try to execute a promise-returning function until it succeeds or a stopping condition is reached.
  */
@@ -64,14 +100,30 @@ export function tryUntilAsync<TReturn>(
 ): Promise<TReturn> {
     const { func, stopCondition, tryLimits = {}, delay = { ms: 1000 } } = opts;
 
-    const { maxAttempts, maxTimeMS } = tryLimits;
+    const { 
+        maxAttempts,
+        maxTimeMS = 1000 * 60 
+    } = tryLimits;
 
     let attempts = 0;
     let startTime = Date.now();
 
     return new Promise<TReturn>(async (resolve, reject) => {
+        /** The last error we encountered. */
+        var lastError: Error | undefined = undefined;
+
+        // Because setTimeout only accepts a 32-bit int, we need to limit the maxTimeMS
+        // to the max value of a 32-bit int minus 2.
+        const usingTimeout = Math.min(maxTimeMS, Math.pow(2, 31) - 2)
+        const timeoutErrorMessage = `Timed out after maxTimeMS: ${maxTimeMS} ${usingTimeout === maxTimeMS ? '' : '(truncated to 2^31 - 2)'}`;
+        setTimeout(() => {
+            reject(new TryUntilTimeoutError(timeoutErrorMessage, lastError));
+        }, usingTimeout);
+
+
         while (true) {
             try {
+                // Try running the function.
                 const result = await func(Date.now() - startTime);
 
                 if (stopCondition && stopCondition(result)) {
@@ -83,12 +135,20 @@ export function tryUntilAsync<TReturn>(
                     resolve(result);
                     return;
                 }
-            } catch (e) {
+            } catch (e: any) {
+                // If we got an error, save it.
+                lastError = e;
+
+                // If we're over our max attempts, reject.
                 if (maxAttempts && attempts >= maxAttempts - 1) {
-                    reject(e);
+                    reject(new TryUntilTimeoutError(`Exceeded maxAttempts: ${maxAttempts}`, lastError));
                     return;
-                } else if (maxTimeMS && Date.now() - startTime >= maxTimeMS) {
-                    reject(e);
+                }
+                
+                // If we're over our max time, reject.
+                // NOTE: this probably already happened due to the setTimeout above.
+                else if (maxTimeMS && Date.now() - startTime >= maxTimeMS) {
+                    reject(new TryUntilTimeoutError(timeoutErrorMessage, lastError));
                     return;
                 }
             }

@@ -1,4 +1,9 @@
-import { tryUntilAsync } from '../src/functions/tryUntilAsync';
+import {
+    tryUntilAsync,
+    TryUntilOptions,
+} from '../src/functions/tryUntilAsync';
+
+jest.useRealTimers();
 
 describe('tryUntilAsync', () => {
     test('should resolve when promise resolves without stopCondition and no errors', async () => {
@@ -28,19 +33,41 @@ describe('tryUntilAsync', () => {
 
         await expect(
             tryUntilAsync({ func, tryLimits: { maxAttempts } })
-        ).rejects.toThrow('Something went wrong');
+        ).rejects.toThrow(`Exceeded maxAttempts: ${maxAttempts}`);
         expect(func).toHaveBeenCalledTimes(maxAttempts);
     });
 
     test('should stop trying after maxTimeMS if error thrown', async () => {
+        const maxTimeMS = 1000;
         const func = jest
             .fn()
-            .mockRejectedValue(new Error('Something went wrong'));
-        const maxTimeMS = 1000;
+            .mockRejectedValue(new Error(`Something went wrong`));
 
         await expect(
             tryUntilAsync({ func, tryLimits: { maxTimeMS } })
-        ).rejects.toThrow('Something went wrong');
+        ).rejects.toThrow(`Timed out after maxTimeMS: ${maxTimeMS}`);
+    });
+
+    describe('tryUntilAsync', () => {
+        it('should fail on timeout', async () => {
+            const maxTimeMS = 1000;
+
+            const options: TryUntilOptions<void> = {
+                func: jest.fn(() => new Promise(res => setTimeout(res, 2000))),
+                tryLimits: {
+                    maxTimeMS,
+                },
+                delay: {
+                    // Delay longer than maxTimeMS
+                    ms: 10000
+                }
+            };
+    
+            await expect(tryUntilAsync(options)).rejects.toThrow(`Timed out after maxTimeMS: ${maxTimeMS}`);
+            
+            // Validate that the function was called twice before the timeout
+            expect(options.func).toHaveBeenCalledTimes(1);
+        });
     });
 
     test('should wait for delay.ms between attempts', async () => {
