@@ -1,7 +1,7 @@
 {
     "name": "@lukebechtel/lab-ts-utils",
-    "version": "2.1.1",
-    "description": "A template for creating npm packages using TypeScript and VSCode",
+    "version": "3.0.1",
+    "description": "A library of small, self-contained utility functions for use in TypeScript projects.",
     "main": "./lib/src/index.js",
     "types": "./lib/src/index.d.ts",
     "private": false,
