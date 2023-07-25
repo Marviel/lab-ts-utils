@@ -1,22 +1,48 @@
+export interface TrimLinesConfig {
+  /**
+   * If true, trims the whitespace from the start of each line,
+   * equal to the least indented line of the provided text.
+   * 
+   * @default true
+   */
+  trimLeftToLeastIndent?: boolean;
+  /**
+   * If true, removes the leading line blocks.
+   * 
+   * @default true
+   */
+  trimVerticalStart?: boolean; 
+  /** 
+   * If true, removes the trailing line blocks.
+   * 
+   * @default true
+   */
+  trimVerticalEnd?: boolean 
+  /**
+   * FUTURE: If provided, will force all lines to have at least this much whitespace at the start.
+   */
+  // minIndent?: {
+  //   type: 'spaces',
+  //   minNumSpaces: number
+  // } | {
+  //   type: 'tabs',
+  //   minNumTabs: number
+  // }
+}
+
+
 /**
  * Trims the whitespace from the start and end of each line.
  *
  * Also optionally trims the leading and trailing line blocks.
  *
  * @param str The string to trim.
- * @param config { trimLeftToLeastIndent: boolean, trimVerticalStart: boolean, trimVerticalEnd: boolean } Optional config object. Defaults to { trimVerticalStart: true, trimVerticalEnd: true } if not provided.
- *         trimLeftToLeastIndent: If true, trims the whitespace from the start of each line to the least indent.
- *         trimVerticalStart: If true, removes the leading line blocks.
- *         trimVerticalEnd: If true, removes the trailing line blocks.
+ * @param config Configuration for how to trim the string.
  * @returns The trimmed string.
  */
 export function trimLines(
   str: string,
-  config?: {
-    trimLeftToLeastIndent?: boolean;
-    trimVerticalStart?: boolean; 
-    trimVerticalEnd?: boolean 
-  }
+  config?: TrimLinesConfig
 ): string {
   const { trimLeftToLeastIndent, trimVerticalStart, trimVerticalEnd } = {
     trimLeftToLeastIndent: config?.trimLeftToLeastIndent ?? true,
