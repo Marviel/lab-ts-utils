@@ -8,3 +8,4 @@ export * from './trimLines';
 export * from './typedUuidV4';
 export * from './types';
 export * from './tryUntilAsync';
+export * from './simpleLogger';
