@@ -5,6 +5,12 @@
 
 A Collection of helpful tools for Typescript projects.
 
+[![npm package][npm-img]][npm-url]
+[![Build Status][build-img]][build-url]
+[![Downloads][downloads-img]][downloads-url]
+[![Issues][issues-img]][issues-url]
+[![Code Coverage][codecov-img]][codecov-url]
+
 
 ## Install
 
@@ -260,3 +266,16 @@ console.log(`Time elapsed: ${(end-start)/1000} seconds`); // console output: "Ti
 ```
 
 Please note that it's possible to encounter a `TryUntilTimeoutError` if the maximum number of attempts is reached or if the maximum time is exceeded without a successful result.
+
+
+
+[build-img]:https://github.com/Marviel/lab-ts-lib/actions/workflows/release.yml/badge.svg
+[build-url]:https://github.com/Marviel/lab-ts-lib/actions/workflows/release.yml
+[downloads-img]:https://img.shields.io/npm/dt/@lukebechtel/lab-ts-utils
+[downloads-url]:https://www.npmtrends.com/@lukebechtel/lab-ts-utils
+[npm-img]:https://img.shields.io/npm/v/@lukebechtel/lab-ts-utils
+[npm-url]:https://www.npmjs.com/package/@lukebechtel/lab-ts-utils
+[issues-img]:https://img.shields.io/github/issues/Marviel/lab-ts-utils
+[issues-url]:https://github.com/Marviel/lab-ts-utils/issues
+[codecov-img]:https://codecov.io/gh/Marviel/lab-ts-utils/branch/main/graph/badge.svg
+[codecov-url]:https://codecov.io/gh/Marviel/lab-ts-utils
