@@ -20,7 +20,7 @@ export interface TryUntilOptions<TReturn> {
     stopCondition?: (result: TReturn) => boolean;
 
     /**
-     * The limit
+     * The limitatations around how many times to try.
      */
     tryLimits?: {
         /**
@@ -53,6 +53,22 @@ export interface TryUntilOptions<TReturn> {
          * ```
          */
         maxTimeMS?: number;
+
+        /**
+         * The maximum amount of time to try per attempt.
+         * Defaults to Infinity.
+         * 
+         * To try three times, for 2 minutes per attempt:
+         * ```ts
+         * tryUntilAsync({
+         *   func: () => Promise.resolve(),
+         *  tryLimits: {
+         *     maxTries: 3,
+         *     maxTimePerAttemptMS: 1000 * 60 * 2
+         *  }
+         * })
+         */
+        maxTimePerAttemptMS?: number;
     };
 
     /**
@@ -102,7 +118,8 @@ export function tryUntilAsync<TReturn>(
 
     const { 
         maxAttempts,
-        maxTimeMS = 1000 * 60 
+        maxTimeMS = 1000 * 60,
+        maxTimePerAttemptMS = Infinity 
     } = tryLimits;
 
     let attempts = 0;
@@ -123,6 +140,14 @@ export function tryUntilAsync<TReturn>(
 
         while (true) {
             try {
+                // Because setTimeout only accepts a 32-bit int, we need to limit the maxTimePerAttemptMS
+                // to the max value of a 32-bit int minus 2.
+                const usingAttemptTimeout = Math.min(maxTimePerAttemptMS, Math.pow(2, 31) - 2)
+                const timeoutAttemptErrorMessage = `Attempt timed out after maxTimeMS: ${usingAttemptTimeout} ${usingTimeout === usingAttemptTimeout ? '' : '(truncated to 2^31 - 2)'}`;
+                setTimeout(() => {
+                    throw new TryUntilTimeoutError(timeoutAttemptErrorMessage, lastError);
+                }, usingAttemptTimeout);
+
                 // Try running the function.
                 const result = await func(Date.now() - startTime);
 

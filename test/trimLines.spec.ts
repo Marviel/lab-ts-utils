@@ -15,9 +15,11 @@ describe('trimLines', () => {
       const input = `
             line1
               line2
+                
                 line3
+            
       `;
-      const expectedOutput = 'line1\n  line2\n    line3';
+      const expectedOutput = 'line1\n  line2\n    \n    line3';
       expect(trimLines(input)).toEqual(expectedOutput);
     });
 

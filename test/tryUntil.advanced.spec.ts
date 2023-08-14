@@ -5,7 +5,7 @@ import {
 
 jest.useFakeTimers();
 
-describe('tryUntilAsync', () => {
+describe('tryUntilAsync Advanced', () => {
     let promiseResolver: (val?: any) => void;
   
     beforeEach(() => {
@@ -52,10 +52,20 @@ describe('tryUntilAsync', () => {
 
         const promise = tryUntilAsync(options);
 
-        // Simulate passing slightly over the amount
-        jest.advanceTimersByTime(Math.pow(2, 31) + 1);
-
-        await expect(promise).rejects.toThrow(`Timed out after maxTimeMS: Infinity (truncated to 2^31 - 2)`);
+        // Do these two in parallel
+        await expect(Promise.race([
+            promise,
+            new Promise(res => {
+                jest.advanceTimersByTime(Math.pow(2, 31) + 1)
+                const retting = () => {
+                    console.error('retting was called... this should never happen.')
+                    res(undefined);
+                }
+                // Wait for 5 seconds before resolving.
+                // This should never actually happen.
+                setTimeout(retting, 5000)
+            })
+        ])).rejects.toThrow(`Timed out after maxTimeMS: Infinity (truncated to 2^31 - 2)`);
 
         // Validate that the function was called correctly
         expect(options.func).toHaveBeenCalledTimes(1);

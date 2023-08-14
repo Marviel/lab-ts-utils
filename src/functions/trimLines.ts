@@ -85,12 +85,13 @@ export function trimLines(
     let newVal = l.trim();
 
     // If trimLeftToLeastIndent is true, trim the whitespace from the start of each line to the least indent.
-    if (newVal.length > 1 && trimLeftToLeastIndent && leastIndent !== null) {
+    if (trimLeftToLeastIndent && leastIndent !== null) {
         // Calculate the correct amount of left indent for this line.
         const indentOfThisItem = getStringLeftIndentLength(l);
-        const totalIndent = indentOfThisItem - leastIndent;
+        const totalIndent = Math.max(0, indentOfThisItem - leastIndent);
+
         // Re-add the correct amount of whitespace to the start of this line.
-        newVal = `${' '.repeat(totalIndent)}${newVal}`;
+        newVal = totalIndent ? `${' '.repeat(totalIndent)}${newVal}` : newVal;
     }
 
     // Bookkeeping
