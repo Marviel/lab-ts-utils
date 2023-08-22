@@ -9,7 +9,7 @@ export interface TryUntilOptions<TReturn> {
      * If stopCondition is provided, this function will be called with the result of the promise,
      * and if it returns true, the function will stop trying and return the result.
      */
-    func: (timeElapsedMS: number) => Promise<TReturn>;
+    func: (opts: {timeElapsedMS: number, numPreviousTries: number, immediateReject?: (e: Error) => void}) => Promise<TReturn>;
 
     /**
      * If provided, the function will be called with the result of the promise.
@@ -149,7 +149,7 @@ export function tryUntilAsync<TReturn>(
                 }, usingAttemptTimeout);
 
                 // Try running the function.
-                const result = await func(Date.now() - startTime);
+                const result = await func({timeElapsedMS: Date.now() - startTime, numPreviousTries: attempts, immediateReject: reject});
 
                 if (stopCondition && stopCondition(result)) {
                     // Check stop condition, if provided

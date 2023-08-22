@@ -104,4 +104,25 @@ describe('tryUntilAsync', () => {
         expect(delayFunction).toHaveBeenCalled();
         expect(result).toBe('Hello Again, World!');
     });
+
+    it('should immediately reject when immediateReject is called', async () => {
+        const errorMessage = 'Immediate Error';
+    
+        const func = jest.fn(({ immediateReject }) => {
+          immediateReject(new Error(errorMessage));
+          return new Promise((resolve, reject) => {
+            setTimeout(() => resolve('Waited too long.'), 5000);
+          });
+        });
+    
+        const promise = tryUntilAsync({
+          func,
+          tryLimits: {
+            maxAttempts: 10,
+          },
+        });
+    
+        await expect(promise).rejects.toThrowError(errorMessage);
+        expect(func).toHaveBeenCalledTimes(1);
+      });
 });
