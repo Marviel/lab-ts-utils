@@ -133,10 +133,35 @@ export function tryUntilAsync<TReturn>(
         // to the max value of a 32-bit int minus 2.
         const usingTimeout = Math.min(maxTimeMS, Math.pow(2, 31) - 2)
         const timeoutErrorMessage = `Timed out after maxTimeMS: ${maxTimeMS} ${usingTimeout === maxTimeMS ? '' : '(truncated to 2^31 - 2)'}`;
-        setTimeout(() => {
+        
+        var outerTimeout: NodeJS.Timeout | undefined = undefined;
+        var innerTimeout: NodeJS.Timeout | undefined = undefined;
+        var delayTimeout: NodeJS.Timeout | number | undefined = undefined;
+
+        // Setup the outer timeout.
+        outerTimeout = setTimeout(() => {
             reject(new TryUntilTimeoutError(timeoutErrorMessage, lastError));
         }, usingTimeout);
+        
+        const safeResolve = (resolveValue: TReturn | PromiseLike<TReturn>) => {
+            // Clear timeouts
+            if (outerTimeout) clearTimeout(outerTimeout);
+            if (innerTimeout) clearTimeout(innerTimeout);
+            if (delayTimeout) clearTimeout(delayTimeout); 
 
+            // Resolve
+            resolve(resolveValue);
+        }
+
+        const safeReject = (rejectValue: Error) => {
+            // Clear timeouts
+            if (outerTimeout) clearTimeout(outerTimeout);
+            if (innerTimeout) clearTimeout(innerTimeout);
+            if (delayTimeout) clearTimeout(delayTimeout); 
+
+            // Reject
+            reject(rejectValue);
+        }
 
         while (true) {
             try {
@@ -144,7 +169,10 @@ export function tryUntilAsync<TReturn>(
                 // to the max value of a 32-bit int minus 2.
                 const usingAttemptTimeout = Math.min(maxTimePerAttemptMS, Math.pow(2, 31) - 2)
                 const timeoutAttemptErrorMessage = `Attempt timed out after maxTimeMS: ${usingAttemptTimeout} ${usingTimeout === usingAttemptTimeout ? '' : '(truncated to 2^31 - 2)'}`;
-                setTimeout(() => {
+                
+                // Reset the timeout.
+                if (innerTimeout) clearTimeout(innerTimeout);
+                innerTimeout = setTimeout(() => {
                     throw new TryUntilTimeoutError(timeoutAttemptErrorMessage, lastError);
                 }, usingAttemptTimeout);
 
@@ -153,11 +181,11 @@ export function tryUntilAsync<TReturn>(
 
                 if (stopCondition && stopCondition(result)) {
                     // Check stop condition, if provided
-                    resolve(result);
+                    safeResolve(result);
                     return;
                 } else if (!stopCondition) {
                     // If no stop condition, resolve with result
-                    resolve(result);
+                    safeResolve(result);
                     return;
                 }
             } catch (e: any) {
@@ -166,14 +194,14 @@ export function tryUntilAsync<TReturn>(
 
                 // If we're over our max attempts, reject.
                 if (maxAttempts && attempts >= maxAttempts - 1) {
-                    reject(new TryUntilTimeoutError(`Exceeded maxAttempts: ${maxAttempts}`, lastError));
+                    safeReject(new TryUntilTimeoutError(`Exceeded maxAttempts: ${maxAttempts}`, lastError));
                     return;
                 }
                 
                 // If we're over our max time, reject.
                 // NOTE: this probably already happened due to the setTimeout above.
                 else if (maxTimeMS && Date.now() - startTime >= maxTimeMS) {
-                    reject(new TryUntilTimeoutError(timeoutErrorMessage, lastError));
+                    safeReject(new TryUntilTimeoutError(timeoutErrorMessage, lastError));
                     return;
                 }
             }
@@ -183,7 +211,9 @@ export function tryUntilAsync<TReturn>(
 
             // Wait for delay
             if (delay.ms) {
-                await new Promise(resolve => setTimeout(resolve, delay.ms));
+                await new Promise(resolve => {
+                    delayTimeout = setTimeout(resolve, delay.ms)
+                });
             } else if (delay.delayFunction) {
                 await delay.delayFunction();
             }

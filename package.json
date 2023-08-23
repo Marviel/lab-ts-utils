@@ -1,6 +1,6 @@
 {
     "name": "@lukebechtel/lab-ts-utils",
-    "version": "4.0.0",
+    "version": "6.0.0",
     "description": "A library of small, self-contained utility functions for use in TypeScript projects.",
     "main": "./lib/src/index.js",
     "types": "./lib/src/index.d.ts",
@@ -18,8 +18,8 @@
         "lint": "eslint ./src/ --fix",
         "prepare": "husky install",
         "semantic-release": "semantic-release",
-        "test:watch": "jest --forceExit --watch",
-        "test": "jest --forceExit --coverage",
+        "test:watch": "jest --watch",
+        "test": "jest --coverage",
         "typecheck": "tsc --noEmit"
     },
     "repository": {
