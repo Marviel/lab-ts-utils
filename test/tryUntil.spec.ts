@@ -188,4 +188,67 @@ describe('tryUntilAsync', () => {
         await expect(promise).rejects.toThrowError(errorMessage);
         expect(func).toHaveBeenCalledTimes(1);
     });
+
+    test('scalar delay', async () => {
+        let attempts = 0;
+        const res = await tryUntilAsync({
+            func: async ({ numPreviousTries }) => {
+                attempts += 1;
+                if (numPreviousTries < 3) {
+                    throw new Error();
+                } else {
+                    return true;
+                }
+            },
+            maxErrorHistory: 5,
+            delay: {
+                type: 'scalar',
+                ms: 1000,
+            },
+        });
+        expect(attempts).toBe(4);
+    });
+
+    test('expBackoff delay', async () => {
+        let attempts = 0;
+        const res = await tryUntilAsync({
+            func: async ({ numPreviousTries }) => {
+                attempts += 1;
+                if (numPreviousTries < 3) {
+                    throw new Error();
+                } else {
+                    return true;
+                }
+            },
+            maxErrorHistory: 5,
+            delay: {
+                type: 'expBackoff',
+                startMs: 100,
+                multiplier: 2,
+            },
+        });
+        expect(attempts).toBe(4);
+    });
+
+    test('custom delay', async () => {
+        let attempts = 0;
+        const res = await tryUntilAsync({
+            func: async ({ numPreviousTries }) => {
+                attempts += 1;
+                if (numPreviousTries < 3) {
+                    throw new Error();
+                } else {
+                    return true;
+                }
+            },
+            maxErrorHistory: 5,
+            delay: {
+                type: 'custom',
+                delayFunction: ({ numFailedAttempts }) => new Promise<void>((resolve) => {
+                    setTimeout(resolve, numFailedAttempts * 100);
+                }),
+            },
+        });
+        expect(attempts).toBe(4);
+    });
 });

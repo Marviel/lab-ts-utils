@@ -1,5 +1,7 @@
 import { RingBuffer } from 'ring-buffer-ts';
 
+import { expBackoffAsync } from './expBackoffAsync';
+
 export interface TryUntilTryLimitsOptions {
     /**
      * The maximum number of attempts to try,
@@ -111,8 +113,9 @@ export interface TryUntilOptions<TReturn> {
      * Defaults to: `{ ms: 1000 }`
      */
     delay?: {
+        type?: 'old';
         /**
-         * The amount of time to wait between attempts.
+         * The amount of time to wait between attempts, in milliseconds.
          */
         ms?: number;
         /**
@@ -130,7 +133,50 @@ export interface TryUntilOptions<TReturn> {
             err?: Error;
             pastErrors: Error[];
         }) => Promise<void>;
-    };
+    } | {
+        type: 'scalar';
+        /**
+         * The amount of time to wait between attempts, in milliseconds.
+         */
+        ms: number;
+    } | {
+        type: 'expBackoff';
+        /**
+         * The starting time for the first iteration.
+         * 
+         * Defaults to 1000.
+         * 
+         * Algorithm is:
+         *     waitTimeMs = startMs * (multiplier ^ iteration)
+         */
+        startMs?: number;
+        /**
+         * The multiplier to use for exponential backoff.
+         * 
+         * Defaults to 2.
+         * 
+         * Algorithm is:
+         *      waitTimeMs = startMs * (multiplier ^ iteration)
+         */
+        multiplier?: number;
+    } | {
+        type: 'custom';
+        /**
+         * A function which can be used to delay the next attempt.
+         *
+         * The function should return a promise that resolves after a specified amount of time.
+         *
+         * If this is not provided, the function will use setTimeout.
+         *
+         * @returns A promise that resolves after the specified amount of time.
+         */
+        delayFunction: (params: {
+            numFailedAttempts: number;
+            tryLimits: TryUntilTryLimitsOptions;
+            err?: Error;
+            pastErrors: Error[];
+        }) => Promise<void>;
+    }
 }
 
 /**
@@ -219,6 +265,7 @@ export function tryUntilAsync<TReturn>(
         };
 
         while (true) {
+            // console.log('Top of while')
             try {
                 // Because setTimeout only accepts a 32-bit int, we need to limit the maxTimePerAttemptMS
                 // to the max value of a 32-bit int minus 2.
@@ -298,18 +345,29 @@ export function tryUntilAsync<TReturn>(
                 }
 
                 // Wait for delay
-                if (delay.ms) {
+                if (delay.type === 'expBackoff') {
+                    // console.log('expBackoff start')
+                    await expBackoffAsync({
+                        iteration: attempts - 1,
+                        startMs: delay.startMs,
+                        multiplier: delay.multiplier,
+                    })
+                    // console.log('expBackoff done')
+                    continue;
+                } else if (!delay.type && delay.ms) {
                     await new Promise(delayRes => {
                         delayTimeout = setTimeout(delayRes, delay.ms);
                     });
                     continue;
-                } else if (delay.delayFunction) {
+                } else if ((delay.type === undefined || delay.type === 'custom') && delay.delayFunction) {
+                    // console.log('custom start')
                     await delay.delayFunction({
                         numFailedAttempts: attempts,
                         tryLimits,
                         err: pastErrors.getLast(),
                         pastErrors: pastErrors.toArray(),
                     });
+                    // console.log('custom done')
                     continue;
                 } else {
                     continue;

@@ -7,11 +7,11 @@ jest.useFakeTimers();
 
 describe('tryUntilAsync Advanced', () => {
     let promiseResolver: (val?: any) => void;
-  
+
     beforeEach(() => {
         promiseResolver = undefined!;
     });
-  
+
     afterEach(() => {
         jest.clearAllTimers();
     });
@@ -31,7 +31,7 @@ describe('tryUntilAsync Advanced', () => {
 
         // Simulate passing of 2 minute time
         jest.advanceTimersByTime(twoMinutesInMs);
-        
+
         // Resolve the promise after 2 minutes
         promiseResolver();
 
