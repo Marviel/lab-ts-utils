@@ -1,6 +1,6 @@
 {
     "name": "@lukebechtel/lab-ts-utils",
-    "version": "7.0.0",
+    "version": "6.0.1",
     "description": "A library of small, self-contained utility functions for use in TypeScript projects.",
     "main": "./lib/src/index.js",
     "types": "./lib/src/index.d.ts",
@@ -52,7 +52,8 @@
     "homepage": "https://github.com/Marviel/luke-ts-lib#readme",
     "dependencies": {
         "lodash": "^4.17.21",
-        "uuid": "^9.0.0"
+        "uuid": "^9.0.0",
+        "ring-buffer-ts": "1.2.0"
     },
     "devDependencies": {
         "@ryansonshine/commitizen": "^4.2.8",
@@ -75,8 +76,7 @@
         "ts-jest": "^27.0.5",
         "ts-node": "^10.2.1",
         "typescript": "^4.2.4",
-        "@types/uuid": "^9.0.1",
-        "ring-buffer-ts": "1.2.0"
+        "@types/uuid": "^9.0.1"
     },
     "config": {
         "commitizen": {
