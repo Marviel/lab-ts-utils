@@ -1,3 +1,54 @@
+import { RingBuffer } from 'ring-buffer-ts';
+
+export interface TryUntilTryLimitsOptions {
+    /**
+     * The maximum number of attempts to try,
+     */
+    maxAttempts?: number;
+    /**
+     * The maximum amount of time to try,
+     * Defaults to 1 minute.
+     *
+     *
+     * To wait for 2 minutes:
+     * ```ts
+     * tryUntilAsync({
+     *    func: () => Promise.resolve(),
+     *    tryLimits: {
+     *      maxTimeMS: 1000 * 60 * 2
+     *    }
+     * })
+     * ```
+     *
+     * To wait FOREVER
+     * ```ts
+     * tryUntilAsync({
+     *   func: () => Promise.resolve(),
+     *   tryLimits: {
+     *      maxTimeMS: Infinity
+     *   }
+     * })
+     * ```
+     */
+    maxTimeMS?: number;
+
+    /**
+     * The maximum amount of time to try per attempt.
+     * Defaults to Infinity.
+     *
+     * To try three times, for 2 minutes per attempt:
+     * ```ts
+     * tryUntilAsync({
+     *   func: () => Promise.resolve(),
+     *  tryLimits: {
+     *     maxTries: 3,
+     *     maxTimePerAttemptMS: 1000 * 60 * 2
+     *  }
+     * })
+     */
+    maxTimePerAttemptMS?: number;
+}
+
 export interface TryUntilOptions<TReturn> {
     /**
      * The function to try.
@@ -9,7 +60,11 @@ export interface TryUntilOptions<TReturn> {
      * If stopCondition is provided, this function will be called with the result of the promise,
      * and if it returns true, the function will stop trying and return the result.
      */
-    func: (opts: {timeElapsedMS: number, numPreviousTries: number, immediateReject?: (e: Error) => void}) => Promise<TReturn>;
+    func: (opts: {
+        timeElapsedMS: number;
+        numPreviousTries: number;
+        immediateReject?: (e: Error) => void;
+    }) => Promise<TReturn>;
 
     /**
      * If provided, the function will be called with the result of the promise.
@@ -22,54 +77,33 @@ export interface TryUntilOptions<TReturn> {
     /**
      * The limitatations around how many times to try.
      */
-    tryLimits?: {
-        /**
-         * The maximum number of attempts to try,
-         */
-        maxAttempts?: number;
-        /**
-         * The maximum amount of time to try,
-         * Defaults to 1 minute.
-         * 
-         * 
-         * To wait for 2 minutes:
-         * ```ts
-         * tryUntilAsync({
-         *    func: () => Promise.resolve(),
-         *    tryLimits: {
-         *      maxTimeMS: 1000 * 60 * 2
-         *    }
-         * })
-         * ```
-         * 
-         * To wait FOREVER
-         * ```ts
-         * tryUntilAsync({
-         *   func: () => Promise.resolve(),
-         *   tryLimits: {
-         *      maxTimeMS: Infinity
-         *   }
-         * })
-         * ```
-         */
-        maxTimeMS?: number;
+    tryLimits?: TryUntilTryLimitsOptions;
 
-        /**
-         * The maximum amount of time to try per attempt.
-         * Defaults to Infinity.
-         * 
-         * To try three times, for 2 minutes per attempt:
-         * ```ts
-         * tryUntilAsync({
-         *   func: () => Promise.resolve(),
-         *  tryLimits: {
-         *     maxTries: 3,
-         *     maxTimePerAttemptMS: 1000 * 60 * 2
-         *  }
-         * })
-         */
-        maxTimePerAttemptMS?: number;
-    };
+    /**
+     * The maximum number of errors to keep track of.
+     *
+     * Defaults to 50.
+     */
+    maxErrorHistory?: number;
+
+    /**
+     * A function that will be called whenever an error occurs.
+     * @param err The error that occurred on the last try.
+     * @returns ignored.
+     *
+     * This will be called before `delayFunction` is called.
+     */
+    onError?: ({
+        failedAttempts,
+        tryLimits,
+        err,
+        pastErrors,
+    }: {
+        failedAttempts: number;
+        tryLimits: TryUntilTryLimitsOptions;
+        err?: Error;
+        pastErrors: Error[];
+    }) => void;
 
     /**
      * The amount of time to wait between attempts.
@@ -90,23 +124,33 @@ export interface TryUntilOptions<TReturn> {
          *
          * @returns A promise that resolves after the specified amount of time.
          */
-        delayFunction?: () => Promise<void>;
+        delayFunction?: (params: {
+            numFailedAttempts: number;
+            tryLimits: TryUntilTryLimitsOptions;
+            err?: Error;
+            pastErrors: Error[];
+        }) => Promise<void>;
     };
 }
 
-
 /**
  * This represents an error that occurred after the maxAttempts or maxTimeMS was reached.
- * 
+ *
  * To get the error that occurred on the last try, use the `lastTryError` property.
  */
 class TryUntilTimeoutError extends Error {
-    constructor(message: string, readonly lastTryError: Error | undefined) {
+    constructor(message: string, readonly errors: Error[] | undefined) {
         super(message);
         this.name = 'TryUntilTimeoutError';
     }
 }
 
+class TryUntilStopConditionNotMetError extends Error {
+    constructor(message: string) {
+        super(message);
+        this.name = 'TryUntilStopConditionNotMetError';
+    }
+}
 
 /**
  * Try to execute a promise-returning function until it succeeds or a stopping condition is reached.
@@ -114,109 +158,167 @@ class TryUntilTimeoutError extends Error {
 export function tryUntilAsync<TReturn>(
     opts: TryUntilOptions<TReturn>
 ): Promise<TReturn> {
-    const { func, stopCondition, tryLimits = {}, delay = { ms: 1000 } } = opts;
+    const {
+        func,
+        stopCondition,
+        tryLimits = {},
+        delay = { ms: 1000 },
+        maxErrorHistory = 50,
+    } = opts;
 
-    const { 
+    const {
         maxAttempts,
         maxTimeMS = 1000 * 60,
-        maxTimePerAttemptMS = Infinity 
+        maxTimePerAttemptMS = Infinity,
     } = tryLimits;
 
     let attempts = 0;
-    let startTime = Date.now();
+    const startTime = Date.now();
 
     return new Promise<TReturn>(async (resolve, reject) => {
         /** The last error we encountered. */
-        var lastError: Error | undefined = undefined;
+        const pastErrors = new RingBuffer<Error>(maxErrorHistory);
 
         // Because setTimeout only accepts a 32-bit int, we need to limit the maxTimeMS
         // to the max value of a 32-bit int minus 2.
-        const usingTimeout = Math.min(maxTimeMS, Math.pow(2, 31) - 2)
+        const usingTimeout = Math.min(maxTimeMS, Math.pow(2, 31) - 2);
         const timeoutErrorMessage = `Timed out after maxTimeMS: ${maxTimeMS} ${usingTimeout === maxTimeMS ? '' : '(truncated to 2^31 - 2)'}`;
-        
-        var outerTimeout: NodeJS.Timeout | undefined = undefined;
-        var innerTimeout: NodeJS.Timeout | undefined = undefined;
-        var delayTimeout: NodeJS.Timeout | number | undefined = undefined;
+
+        let outerTimeout: NodeJS.Timeout | undefined = undefined;
+        let innerTimeout: NodeJS.Timeout | undefined = undefined;
+        let delayTimeout: NodeJS.Timeout | number | undefined = undefined;
 
         // Setup the outer timeout.
         outerTimeout = setTimeout(() => {
-            reject(new TryUntilTimeoutError(timeoutErrorMessage, lastError));
+            reject(
+                new TryUntilTimeoutError(
+                    timeoutErrorMessage,
+                    pastErrors.toArray()
+                )
+            );
         }, usingTimeout);
-        
+
         const safeResolve = (resolveValue: TReturn | PromiseLike<TReturn>) => {
             // Clear timeouts
             if (outerTimeout) clearTimeout(outerTimeout);
             if (innerTimeout) clearTimeout(innerTimeout);
-            if (delayTimeout) clearTimeout(delayTimeout); 
+            if (delayTimeout) clearTimeout(delayTimeout);
 
             // Resolve
             resolve(resolveValue);
-        }
+        };
 
         const safeReject = (rejectValue: Error) => {
             // Clear timeouts
             if (outerTimeout) clearTimeout(outerTimeout);
             if (innerTimeout) clearTimeout(innerTimeout);
-            if (delayTimeout) clearTimeout(delayTimeout); 
+            if (delayTimeout) clearTimeout(delayTimeout);
 
             // Reject
             reject(rejectValue);
-        }
+        };
 
         while (true) {
             try {
                 // Because setTimeout only accepts a 32-bit int, we need to limit the maxTimePerAttemptMS
                 // to the max value of a 32-bit int minus 2.
-                const usingAttemptTimeout = Math.min(maxTimePerAttemptMS, Math.pow(2, 31) - 2)
-                const timeoutAttemptErrorMessage = `Attempt timed out after maxTimeMS: ${usingAttemptTimeout} ${usingTimeout === usingAttemptTimeout ? '' : '(truncated to 2^31 - 2)'}`;
-                
+                const usingAttemptTimeout = Math.min(
+                    maxTimePerAttemptMS,
+                    Math.pow(2, 31) - 2
+                );
+                const timeoutAttemptErrorMessage = `Attempt timed out after maxTimeMS: ${usingAttemptTimeout} ${usingTimeout === usingAttemptTimeout
+                    ? ''
+                    : '(truncated to 2^31 - 2)'
+                    }`;
+
                 // Reset the timeout.
                 if (innerTimeout) clearTimeout(innerTimeout);
                 innerTimeout = setTimeout(() => {
-                    throw new TryUntilTimeoutError(timeoutAttemptErrorMessage, lastError);
+                    throw new TryUntilTimeoutError(
+                        timeoutAttemptErrorMessage,
+                        pastErrors.toArray()
+                    );
                 }, usingAttemptTimeout);
 
                 // Try running the function.
-                const result = await func({timeElapsedMS: Date.now() - startTime, numPreviousTries: attempts, immediateReject: reject});
+                const result = await func({
+                    timeElapsedMS: Date.now() - startTime,
+                    numPreviousTries: attempts,
+                    immediateReject: reject,
+                });
 
-                if (stopCondition && stopCondition(result)) {
-                    // Check stop condition, if provided
-                    safeResolve(result);
-                    return;
+                if (stopCondition) {
+                    if (stopCondition(result)) {
+                        // Check stop condition, if provided
+                        safeResolve(result);
+                        return;
+                    } else {
+                        throw new Error('Stop condition not met');
+                    }
                 } else if (!stopCondition) {
                     // If no stop condition, resolve with result
                     safeResolve(result);
                     return;
                 }
             } catch (e: any) {
+                // Increment attempts
+                attempts += 1;
+
                 // If we got an error, save it.
-                lastError = e;
+                pastErrors.add(e);
+
+                // Call onError
+                if (opts.onError) {
+                    opts.onError({
+                        failedAttempts: attempts,
+                        tryLimits,
+                        err: pastErrors.getLast(),
+                        pastErrors: pastErrors.toArray(),
+                    });
+                }
 
                 // If we're over our max attempts, reject.
-                if (maxAttempts && attempts >= maxAttempts - 1) {
-                    safeReject(new TryUntilTimeoutError(`Exceeded maxAttempts: ${maxAttempts}`, lastError));
+                if (maxAttempts && attempts >= maxAttempts) {
+                    safeReject(
+                        new TryUntilTimeoutError(
+                            `Exceeded maxAttempts: ${maxAttempts}`,
+                            e
+                        )
+                    );
                     return;
                 }
-                
+
                 // If we're over our max time, reject.
                 // NOTE: this probably already happened due to the setTimeout above.
                 else if (maxTimeMS && Date.now() - startTime >= maxTimeMS) {
-                    safeReject(new TryUntilTimeoutError(timeoutErrorMessage, lastError));
+                    safeReject(
+                        new TryUntilTimeoutError(timeoutErrorMessage, e)
+                    );
                     return;
+                }
+
+                // Wait for delay
+                if (delay.ms) {
+                    await new Promise(delayRes => {
+                        delayTimeout = setTimeout(delayRes, delay.ms);
+                    });
+                    continue;
+                } else if (delay.delayFunction) {
+                    await delay.delayFunction({
+                        numFailedAttempts: attempts,
+                        tryLimits,
+                        err: pastErrors.getLast(),
+                        pastErrors: pastErrors.toArray(),
+                    });
+                    continue;
+                } else {
+                    continue;
                 }
             }
 
-            // Increment attempts
-            attempts += 1;
-
-            // Wait for delay
-            if (delay.ms) {
-                await new Promise(resolve => {
-                    delayTimeout = setTimeout(resolve, delay.ms)
-                });
-            } else if (delay.delayFunction) {
-                await delay.delayFunction();
-            }
+            console.warn(
+                'INTERNAL ERROR: TryUntilAsync reached unreachable code. Please report this issue here: https://github.com/Marviel/lab-ts-utils/issues/new?assignees=&labels=bug&projects=&template=bug_report.md&title=TryuntilAsyncUnreachableCode'
+            );
         }
     });
 }

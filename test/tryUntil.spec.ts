@@ -6,6 +6,69 @@ import {
 jest.useRealTimers();
 
 describe('tryUntilAsync', () => {
+    const mockFunc = jest.fn();
+    const onErrorMock = jest.fn();
+    const delayFunctionMock = jest.fn();
+
+    beforeEach(() => {
+        jest.resetAllMocks();
+    });
+
+    test('onError should be called with correct parameters when an error occurs', async () => {
+        const error = new Error('Test Error');
+
+        mockFunc.mockRejectedValue(error);
+
+        const testTryUntilOptions: TryUntilOptions<void> = {
+            func: mockFunc,
+            tryLimits: {
+                maxAttempts: 2
+            },
+            onError: onErrorMock
+        };
+
+        await expect(tryUntilAsync(testTryUntilOptions)).rejects.toThrow();
+
+        // check if onError was called with correct parameters
+        expect(onErrorMock).toBeCalledWith(expect.objectContaining({
+            failedAttempts: 1,
+            tryLimits: {
+                maxAttempts: 2
+            },
+            err: error,
+            pastErrors: [error]
+        }));
+    });
+
+    test('delayFunction should be called with correct parameters after an error occurred', async () => {
+        delayFunctionMock.mockResolvedValueOnce(undefined);
+        const error = new Error('Test Error');
+
+        mockFunc.mockRejectedValue(error);
+
+        const testTryUntilOptions: TryUntilOptions<void> = {
+            func: mockFunc,
+            tryLimits: {
+                maxAttempts: 2
+            },
+            delay: {
+                delayFunction: delayFunctionMock
+            }
+        };
+
+        await expect(tryUntilAsync(testTryUntilOptions)).rejects.toThrow();
+
+        // check if delayFunction was called with correct parameters
+        expect(delayFunctionMock).toBeCalledWith(expect.objectContaining({
+            numFailedAttempts: 1,
+            tryLimits: {
+                maxAttempts: 2
+            },
+            err: error,
+            pastErrors: [error]
+        }));
+    });
+
     test('should resolve when promise resolves without stopCondition and no errors', async () => {
         const func = jest
             .fn()
@@ -62,9 +125,9 @@ describe('tryUntilAsync', () => {
                     ms: 10000
                 }
             };
-    
+
             await expect(tryUntilAsync(options)).rejects.toThrow(`Timed out after maxTimeMS: ${maxTimeMS}`);
-            
+
             // Validate that the function was called twice before the timeout
             expect(options.func).toHaveBeenCalledTimes(1);
         });
@@ -107,22 +170,22 @@ describe('tryUntilAsync', () => {
 
     it('should immediately reject when immediateReject is called', async () => {
         const errorMessage = 'Immediate Error';
-    
+
         const func = jest.fn(({ immediateReject }) => {
-          immediateReject(new Error(errorMessage));
-          return new Promise((resolve, reject) => {
-            setTimeout(() => resolve('Waited too long.'), 5000);
-          });
+            immediateReject(new Error(errorMessage));
+            return new Promise((resolve, reject) => {
+                setTimeout(() => resolve('Waited too long.'), 5000);
+            });
         });
-    
+
         const promise = tryUntilAsync({
-          func,
-          tryLimits: {
-            maxAttempts: 10,
-          },
+            func,
+            tryLimits: {
+                maxAttempts: 10,
+            },
         });
-    
+
         await expect(promise).rejects.toThrowError(errorMessage);
         expect(func).toHaveBeenCalledTimes(1);
-      });
+    });
 });
