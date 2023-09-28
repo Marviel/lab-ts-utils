@@ -6,8 +6,8 @@
  * @return {string} - Returns a new string with each line prefixed with the given prefix.
  */
 export function prefixAllLines(prefix: string, str: string): string {
-  return str
-    .split('\n')
-    .map(line => `${prefix}${line}`)
-    .join('\n');
+    return str
+        .split('\n')
+        .map(line => `${prefix}${line}`)
+        .join('\n');
 }

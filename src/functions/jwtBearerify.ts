@@ -5,6 +5,6 @@
  * @returns A JWT token as a string starting with "Bearer", followed by a space and the token.
  */
 export function jwtBearerify(token: string): string {
-  // Check if the token starts with "Bearer", and return it with the prefix if not
-  return token.startsWith('Bearer') ? token.trim() : `Bearer ${token.trim()}`;
+    // Check if the token starts with "Bearer", and return it with the prefix if not
+    return token.startsWith('Bearer') ? token.trim() : `Bearer ${token.trim()}`;
 }

@@ -9,7 +9,7 @@ import { notEmpty } from './notEmpty';
  * @returns True if the value is a Promise, otherwise False.
  */
 export function isPromise(value: any): value is Promise<any> {
-  return value instanceof Promise;
+    return value instanceof Promise;
 }
 
 /**
@@ -20,10 +20,10 @@ export function isPromise(value: any): value is Promise<any> {
  * @template False - Returned when the type is not `any`.
  */
 declare type IsAny<T, True, False = never> = true | false extends (
-  T extends never ? true : false
+    T extends never ? true : false
 )
-  ? True
-  : False;
+    ? True
+    : False;
 
 /**
  * Returns an array of values from a dictionary object, filtering out empty entries.
@@ -33,7 +33,7 @@ declare type IsAny<T, True, False = never> = true | false extends (
  * @returns An array of filtered values.
  */
 export function dictValues<TValue>(dic: Dictionary<TValue>) {
-  return _.values(dic).filter(notEmpty);
+    return _.values(dic).filter(notEmpty);
 }
 
 /**
@@ -47,10 +47,10 @@ export function dictValues<TValue>(dic: Dictionary<TValue>) {
  * @returns A filtered array.
  */
 export function notEmptyMap<I, O>(
-  m: I[],
-  fn: (input: I) => O | undefined | null
+    m: I[],
+    fn: (input: I) => O | undefined | null
 ): O[] {
-  return m.map(fn).filter(notEmpty);
+    return m.map(fn).filter(notEmpty);
 }
 
 /**
@@ -59,8 +59,8 @@ export function notEmptyMap<I, O>(
  * @template T - The data type.
  */
 export type Maybe<T> =
-  | { success: true; data: T; error?: undefined }
-  | { success: false; error: Error; data?: undefined };
+    | { success: true; data: T; error?: undefined }
+    | { success: false; error: Error; data?: undefined };
 
 /**
  * A utility type for defining async functions with given input and output types.
@@ -69,7 +69,7 @@ export type Maybe<T> =
  * @template OutT - The output type.
  */
 export type AsyncFunction<InT extends any[], OutT> = (
-  ...args: InT
+    ...args: InT
 ) => Promise<OutT>;
 
 /**
@@ -80,7 +80,7 @@ export type AsyncFunction<InT extends any[], OutT> = (
  * @returns The input value or null.
  */
 export function valueOrNull<T>(v: T | null | undefined): T | null {
-  return v ? v : null;
+    return v ? v : null;
 }
 
 /**
@@ -92,7 +92,7 @@ export function valueOrNull<T>(v: T | null | undefined): T | null {
  * @returns The input as an array.
  */
 export function arrayify<T>(arg: T | T[]): T[] {
-  return arg instanceof Array ? arg : [arg];
+    return arg instanceof Array ? arg : [arg];
 }
 
 /**
@@ -114,30 +114,30 @@ export type Unarray<T> = T extends Array<infer U> ? U : T;
  * @returns A maybe object.
  */
 export function catchToMaybeAsync<InT extends any[], OutT>(
-  f: AsyncFunction<InT, OutT>
+    f: AsyncFunction<InT, OutT>
 ): AsyncFunction<InT, Maybe<OutT>> {
-  return async (...input: InT) => {
-    try {
-      const data = await Promise.resolve(f(...input));
-      return { success: true, data };
-    } catch (error: any) {
-      return { success: false, error };
-    }
-  };
+    return async (...input: InT) => {
+        try {
+            const data = await Promise.resolve(f(...input));
+            return { success: true, data };
+        } catch (error: any) {
+            return { success: false, error };
+        }
+    };
 }
 
 /**
  * Returns the type of the constructor parameters of a class.
  */
 export type ConstructorParameters<T> = T extends new (...args: infer U) => any
-  ? U
-  : never;
+    ? U
+    : never;
 /**
  * Returns the type of the constructor return type of a class.
  */
 export type ConstructorReturnType<T> = T extends new (...args: any[]) => infer R
-  ? R
-  : never;
+    ? R
+    : never;
 
 /**
  * Gets a non-nullable property type from a the first constructor parameter of a class.
@@ -165,6 +165,6 @@ export type ConstructorReturnType<T> = T extends new (...args: any[]) => infer R
  *
  */
 export type RequiredConstructorConfigType<
-  T,
-  Prop extends keyof ConstructorParameters<T>[0]
+    T,
+    Prop extends keyof ConstructorParameters<T>[0]
 > = NonNullable<ConstructorParameters<T>[0][Prop]>;

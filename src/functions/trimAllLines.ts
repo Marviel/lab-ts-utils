@@ -5,8 +5,8 @@
  * @return {string} - Returns a new string in which all lines have been trimmed.
  */
 export function trimAllLines(str: string, detectIndentation = true): string {
-  return str
-    .split('\n')
-    .map(line => line.trim())
-    .join('\n');
+    return str
+        .split('\n')
+        .map(line => line.trim())
+        .join('\n');
 }

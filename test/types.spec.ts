@@ -1,18 +1,19 @@
 import {
-  arrayify,
-  catchToMaybeAsync,
-  dictValues,
-  isPromise,
-  Maybe,
-  notEmptyMap,
-  valueOrNull,
+    arrayify,
+    catchToMaybeAsync,
+    dictValues,
+    isPromise,
+    Maybe,
+    notEmptyMap,
+    valueOrNull,
 } from '../src';
 
 // Test for isPromise
 describe('isPromise', () => {
   it('should return true if value is a Promise', () => {
-    const promise = new Promise(() => {
-      console.log('hi');
+    const promise = new Promise<void>((res) => {
+      /* noop */
+      res();
     });
     expect(isPromise(promise)).toBe(true);
   });

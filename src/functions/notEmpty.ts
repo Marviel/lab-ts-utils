@@ -9,8 +9,8 @@
  * @returns {boolean} True if the value is not empty, false otherwise
  */
 export function notEmpty<TValue>(
-  value: TValue | null | undefined
+    value: TValue | null | undefined
 ): value is TValue {
-  // Check if the provided value is neither null nor undefined
-  return value !== null && value !== undefined;
+    // Check if the provided value is neither null nor undefined
+    return value !== null && value !== undefined;
 }
