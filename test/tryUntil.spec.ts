@@ -191,7 +191,7 @@ describe('tryUntilAsync', () => {
 
     test('scalar delay', async () => {
         let attempts = 0;
-        const res = await tryUntilAsync({
+        await expect(tryUntilAsync({
             func: async ({ numPreviousTries }) => {
                 attempts += 1;
                 if (numPreviousTries < 3) {
@@ -205,8 +205,11 @@ describe('tryUntilAsync', () => {
                 type: 'scalar',
                 ms: 1000,
             },
-        });
-        expect(attempts).toBe(4);
+            tryLimits: {
+                maxTimeMS: 1500,
+            }
+        })).rejects.toThrow();
+        expect(attempts).toBe(2);
     });
 
     test('expBackoff delay', async () => {

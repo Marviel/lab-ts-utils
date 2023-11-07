@@ -354,12 +354,32 @@ export function tryUntilAsync<TReturn>(
                     })
                     // console.log('expBackoff done')
                     continue;
-                } else if (!delay.type && delay.ms) {
+                } else if (delay.type === 'old' || delay.type === undefined || delay.type === null) {
+                    if (delay.ms) {
+                        await new Promise(delayRes => {
+                            delayTimeout = setTimeout(delayRes, delay.ms);
+                        });
+                        continue;
+                    }
+                    else if (delay.delayFunction) {
+                        // console.log('custom start')
+                        await delay.delayFunction({
+                            numFailedAttempts: attempts,
+                            tryLimits,
+                            err: pastErrors.getLast(),
+                            pastErrors: pastErrors.toArray(),
+                        });
+                        // console.log('custom done')
+                        continue;
+                    }
+                }
+                else if (delay.type === 'scalar') {
                     await new Promise(delayRes => {
                         delayTimeout = setTimeout(delayRes, delay.ms);
                     });
                     continue;
-                } else if ((delay.type === undefined || delay.type === 'custom') && delay.delayFunction) {
+                }
+                else if (delay.type === 'custom') {
                     // console.log('custom start')
                     await delay.delayFunction({
                         numFailedAttempts: attempts,
