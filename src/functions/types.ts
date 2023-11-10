@@ -62,6 +62,39 @@ export type Maybe<T> =
     | { success: true; data: T; error?: undefined }
     | { success: false; error: Error; data?: undefined };
 
+
+/**
+ * Helper to create a success maybe object.
+ * @param obj The data object.
+ * @returns A success maybe object.
+ */
+export function successMaybe<T>(data: T): Maybe<T> {
+    return { success: true, data, error: undefined };
+}
+
+/**
+ * Helper to create a failure maybe object.
+ * @param error The error object.
+ * @returns A failure maybe object.
+ */
+export function failureMaybe(error: Error): Maybe<any> {
+    return { success: false, error, data: undefined };
+}
+
+export function isSuccessMaybe<T>(item: any): item is { success: true; data: T } {
+    // Make sure we have all the necessary fields, and that success is true.
+    return (item.success !== undefined && item.data !== undefined) && item.success;
+}
+
+export function isFailureMaybe<T>(item: any): item is { success: false; error: Error } {
+    // Make sure we have all the necessary fields, and that success is false.
+    return (item.success !== undefined && item.error !== undefined) && !item.success;
+}
+
+export type IfMaybe<T, Y, N> = T extends Maybe<any> ? Y : N;
+
+
+
 /**
  * A utility type for defining async functions with given input and output types.
  *
@@ -168,3 +201,14 @@ export type RequiredConstructorConfigType<
     T,
     Prop extends keyof ConstructorParameters<T>[0]
 > = NonNullable<ConstructorParameters<T>[0][Prop]>;
+
+
+
+
+/**
+ * Determine if an array is not empty, meaning it has at least one element.
+ */
+//@ts-ignore
+function notEmptyArr<T>(arr: T[]): arr is [T, ...T] {
+    return arr.length >= 1;
+}
