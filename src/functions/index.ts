@@ -11,3 +11,5 @@ export * from './tryUntilAsync';
 export * from './simpleLogger';
 export * from './expBackoffAsync';
 export * from './expBackoffCalculator';
+export * from './sampleSizeGuaranteed';
+export * from './asyncSleep';
