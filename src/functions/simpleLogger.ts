@@ -43,22 +43,23 @@ export interface CreateSimpleLoggerArgs {
      * ```
      */
     prefix?:
-        | {
-              type: 'rawString';
-              rawString: string;
-          }
-        | {
-              type: 'simpleString';
-              simpleString: string;
-              logTypePrefix?: 'short' | 'long';
-          }
-        | {
-              type: 'function';
-              func: (params: {
-                  logType: 'log' | 'warn' | 'error' | 'info' | 'debug';
-                  logArgs: any[];
-              }) => string | string[];
-          };
+    | string
+    | {
+        type: 'rawString';
+        rawString: string;
+    }
+    | {
+        type: 'simpleString';
+        simpleString: string;
+        logTypePrefix?: 'short' | 'long';
+    }
+    | {
+        type: 'function';
+        func: (params: {
+            logType: 'log' | 'warn' | 'error' | 'info' | 'debug';
+            logArgs: any[];
+        }) => string | string[];
+    };
 
     /**
      * Functions to use for logging.
@@ -104,7 +105,9 @@ export function createSimpleLogger(args: CreateSimpleLoggerArgs): SimpleLogger {
         logType: 'log' | 'warn' | 'error' | 'info' | 'debug'
     ): string | string[] | undefined => {
         if (args.prefix) {
-            if (args.prefix.type === 'rawString') {
+            if (typeof args.prefix === 'string') {
+                return `[${args.prefix}]: `
+            } else if (args.prefix.type === 'rawString') {
                 return args.prefix.rawString;
             } else if (args.prefix.type === 'simpleString') {
                 const logTypePrefixTable =

@@ -1,4 +1,4 @@
- // update with actual import path
+// update with actual import path
 
 import {
     createSimpleLogger,
@@ -51,6 +51,16 @@ describe('createSimpleLogger', () => {
         expect(consoleMock).toHaveBeenCalledWith('[PREFIX]', 'Test Log');
     });
 
+    it('should allow a string argument type, which does the same thing as simpleString', () => {
+        const logger: SimpleLogger = createSimpleLogger({
+            prefix: 'PREFIX'
+        });
+
+        logger.log('Test Log');
+
+        expect(consoleMock).toHaveBeenCalledWith('[PREFIX]: ', 'Test Log');
+    });
+
     it('should add simpleString prefix to log', () => {
         const logger: SimpleLogger = createSimpleLogger({
             prefix: {
@@ -77,4 +87,5 @@ describe('createSimpleLogger', () => {
 
         expect(consoleMock).toHaveBeenCalledWith('[LOG]: Test Log', 'Test Log');
     });
+
 });
