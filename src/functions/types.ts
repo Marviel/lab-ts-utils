@@ -59,8 +59,8 @@ export function notEmptyMap<I, O>(
  * @template T - The data type.
  */
 export type Maybe<T> =
-    | { success: true; data: T; error?: undefined }
-    | { success: false; error: Error; data?: undefined };
+    | { success: true; data: T; error?: undefined | null }
+    | { success: false; error: Error; data?: undefined | null };
 
 
 /**
